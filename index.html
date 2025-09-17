@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Röda lådan — Presentation</title>
+<meta name="description" content="Modern presentationswebb för Röda lådan: specifikationer, kostnader och plan med smidiga animationer och slide-navigering."/>
+<link rel="icon" type="image/png" href="RadaLadan.png">
+<link rel="alternate icon" href="data:image/x-icon;,">
+
+<style>
+  :root{
+    --bg:#0c0d10;
+    --panel:#0f1115;
+    --card:#12141a;
+    --line:#232631;
+    --text:#eef0f3;
+    --muted:#a6acb8;
+    --accent:#d61e1e;
+    --radius-xl:26px;
+    --radius-lg:20px;
+    --radius:16px;
+    --shadow:0 20px 50px rgba(0,0,0,.35);
+    --logo-size: 72px;
+    --topbar-pad-y: 18px;
+    --topbar-h: calc(var(--logo-size) + var(--topbar-pad-y)*2 + 2px);
+  }
+
+  *{ box-sizing:border-box }
+  html,body{height:100%}
+  html{scroll-behavior:smooth}
+  ::-webkit-scrollbar{ display:none }
+
+  body{
+    margin:0;
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans";
+    color:var(--text);
+    background:
+      radial-gradient(1200px 800px at 90% -10%, #1a1d25 0%, transparent 60%),
+      radial-gradient(1000px 600px at 10% -10%, #141821 0%, transparent 50%),
+      var(--bg);
+    line-height:1.6;
+    overflow:hidden; /* deck hanterar all navigering */
+  }
+
+  /* Topbar */
+  .topbar{
+    position:fixed; inset:0 0 auto 0; z-index:50;
+    backdrop-filter:saturate(140%) blur(8px);
+    background:rgba(10,11,14,.65);
+    border-bottom:1px solid var(--line)
+  }
+  .topbar-inner{
+    width:min(1080px,92vw); margin:0 auto;
+    display:flex; align-items:center; justify-content:space-between; gap:16px;
+    padding:var(--topbar-pad-y) 0;
+  }
+  .brand{
+    display:flex; align-items:center; gap:14px;
+    font-weight:800; letter-spacing:.2px;
+    font-size:clamp(18px,2.2vw,24px);
+  }
+  .logo{
+    width:var(--logo-size); height:var(--logo-size);
+    border-radius:50%;
+    overflow:hidden;
+    display:grid; place-items:center;
+    background:linear-gradient(145deg,#171a22,#0a0b0e);
+    border:2px solid #22252f;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.05);
+  }
+  .logo img{ width:100%; height:100%; object-fit:contain }
+
+  .nav{ display:flex; gap:6px; flex-wrap:wrap }
+  .nav a{ text-decoration:none; color:var(--text); padding:8px 12px; border-radius:12px; font-weight:700; font-size:14px }
+  .nav a:hover,.nav a:focus{ background:#191c24 }
+
+  /* Deck / slides — HORIZONTAL like Google Slides */
+  .deck{
+    position:fixed;
+    top:var(--topbar-h);
+    left:0; right:0; bottom:0;
+    height:calc(100svh - var(--topbar-h));
+    display:flex;
+    flex-direction:row;
+    overflow-x:auto;
+    overflow-y:hidden;
+    scroll-snap-type:x mandatory;
+    scroll-behavior:smooth;
+    gap:0;
+    padding:0;
+  }
+  section.slide{
+    min-width:100svw;                      /* full bredd */
+    height:100%;
+    scroll-snap-align:start;
+    display:grid; place-items:center; position:relative; padding:24px;
+  }
+  .container{ width:min(1080px,92vw); margin:0 auto }
+
+  /* Hero */
+  .hero{ display:grid; gap:28px; grid-template-columns:1.2fr .8fr; align-items:center }
+  @media (max-width: 920px){ .hero{ grid-template-columns:1fr; gap:18px } }
+  .headline{ font-size:clamp(34px,6.2vw,66px); line-height:1.03; letter-spacing:-.02em; margin:0 }
+  .lede{ color:var(--muted); max-width:60ch }
+  .cta{ display:flex; gap:10px; margin-top:10px }
+  .btn{ appearance:none; border:none; cursor:pointer; padding:12px 16px; border-radius:14px; font-weight:700 }
+  .btn.primary{ background:var(--accent); color:#fff; box-shadow:0 10px 30px rgba(214,30,30,.25) }
+  .btn.ghost{ background:transparent; color:var(--text); border:1px solid var(--line) }
+
+  /* 3D viewer */
+  .viewer{
+    position:relative;
+    background:linear-gradient(180deg,#171a22,#0f1218);
+    border:1px solid var(--line);
+    border-radius:24px;
+    box-shadow: var(--shadow);
+    aspect-ratio: 16/9;
+    width:min(1080px,92vw);
+    max-height:72vh;
+    overflow:hidden;
+  }
+  .viewer canvas{ display:block; width:100%; height:100% }
+  .viewer::after{
+    content:"";
+    position:absolute; inset:0;
+    background: radial-gradient(600px 300px at -10% -20%, rgba(214,30,30,.08), transparent 55%);
+    pointer-events:none;
+  }
+  .viewer .badge{
+    position:absolute; left:10px; top:10px;
+    background:rgba(18,20,26,.85);
+    border:1px solid #20242f;
+    color:#cfd6e6; font-weight:700;
+    padding:6px 10px; border-radius:12px; font-size:12px; z-index:2;
+  }
+
+  /* Grid & cards */
+  .card{ background:linear-gradient(180deg,#141821,#0f1217); border:1px solid var(--line); border-radius:20px; padding:22px; box-shadow: var(--shadow) }
+  .grid{ display:grid; gap:16px; grid-template-columns: repeat(12,1fr) }
+  .span-12{grid-column:span 12} .span-8{grid-column:span 8} .span-6{grid-column:span 6} .span-4{grid-column:span 4}
+  @media (max-width: 980px){ .span-8,.span-6,.span-4{grid-column:span 12} }
+  h2{margin:0 0 10px; font-size:clamp(22px,3.6vw,36px); letter-spacing:-.01em}
+  h3{margin:0 0 8px; font-size:clamp(16px,2.4vw,22px)}
+  p{margin:0 0 10px; color:var(--muted)}
+  .specs{display:grid; gap:10px}
+  .row{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 12px; border-radius:12px; background:#0f1217; border:1px solid #20242f}
+  .row b{font-variant-numeric:tabular-nums}
+  table{width:100%; border-collapse:collapse; font-variant-numeric:tabular-nums}
+  th,td{padding:10px 8px; border-bottom:1px dashed #262a36; text-align:left}
+  th{color:#b8bfcc; font-weight:600}
+  tfoot td{border-top:1px solid #2f3442; font-weight:700}
+
+  /* Dots & buttons */
+  .dots{
+    position:fixed; left:50%; transform:translateX(-50%);
+    bottom:18px; z-index:60;
+    display:flex; gap:10px; align-items:center; justify-content:center;
+  }
+  .dot{ width:10px; height:10px; border-radius:20px; background:#404656; border:1px solid #545b6b; opacity:.7; transition: all .25s ease }
+  .dot.active{ width:24px; height:10px; background:var(--accent); border-color:#ffb7a8; opacity:1 }
+  .dot:focus-visible{ outline:2px solid #fff }
+  .slide-nav{
+    position:fixed; right:16px; bottom:14px; z-index:60;
+    display:flex; gap:10px;
+  }
+  .slide-btn{ padding:10px 14px; border-radius:14px; border:1px solid var(--line); background:rgba(18,20,26,.7); color:var(--text); font-weight:700; cursor:pointer }
+  .slide-btn:hover{ background:#1a1e28 }
+
+  /* Reveal */
+  .reveal{ opacity:0; transform:translateY(14px); filter:blur(4px) }
+  .reveal.in{ opacity:1; transform:none; filter:none; transition: all .7s cubic-bezier(.2,.75,.2,1) }
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto}
+    .reveal,.reveal.in{transition:none}
+  }
+
+  /* Inputs */
+  .input{display:flex; align-items:center; gap:8px; padding:8px 10px; border:1px solid var(--line); border-radius:12px; background:#0f1217}
+  .input input{width:100%; background:none; border:none; outline:none; color:var(--text); font-weight:700}
+  .muted{color:var(--muted)}
+
+  /* Allow internal vertical scroll areas inside full-height slides */
+  .allow-scroll{ overflow:auto; max-height:calc(100% - 4px); }
+
+  /* Hero tune + big logo */
+  .hero-tuned{ grid-template-columns:1.2fr .8fr; gap:32px; width:min(1200px,92vw); }
+  @media (max-width:920px){ .hero-tuned{ grid-template-columns:1fr; } }
+  .logo.big{
+    width: clamp(180px, 28vw, 360px);
+    height: clamp(180px, 28vw, 360px);
+    border-radius:50%;
+    display:grid; place-items:center;
+    background:linear-gradient(145deg,#171a22,#0a0b0e);
+    border:2px solid #22252f;
+    box-shadow:0 30px 60px rgba(0,0,0,.45), inset 0 0 0 1px rgba(255,255,255,.05);
+  }
+  .hero .lede{font-size:clamp(14px,1.3vw,18px)}
+  .headline{ font-size:clamp(34px,6.2vw,66px); line-height:1.03; letter-spacing:-.02em; margin:0 }
+</style>
+</head>
+<body>
+
+  <!-- Top bar -->
+  <div class="topbar" role="navigation" aria-label="Huvudnavigering">
+    <div class="topbar-inner">
+      <div class="brand">
+        <div class="logo" aria-hidden="true">
+          <img src="RadaLadan.png" alt="Röda lådan logotyp">
+        </div>
+        Röda lådan
+      </div>
+      <nav class="nav" id="topNav">
+        <a href="#slide-1">Intro</a>
+        <a href="#slide-2">Modeller</a>
+        <a href="#slide-6">Spec</a>
+        <a href="#slide-8">Kostnad</a>
+        <a href="#slide-11">Plan</a>
+        <a href="#slide-14">Offert</a>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Dots -->
+  <div class="dots" id="dots" aria-hidden="true"></div>
+
+  <!-- Prev/Next -->
+  <div class="slide-nav" aria-hidden="false">
+    <button class="slide-btn" id="prevSlide" aria-label="Föregående">← Föregående</button>
+    <button class="slide-btn" id="nextSlide" aria-label="Nästa">Nästa →</button>
+  </div>
+
+  <!-- Slides -->
+  <main class="deck" id="deck">
+
+    <!-- 1: Intro -->
+    <section class="slide" id="slide-1" aria-label="Intro">
+      <div class="container hero hero-tuned">
+        <div class="reveal in">
+          <h1 class="headline">Röda lådan — en sak, gjort rätt.</h1>
+          <p class="lede">
+            Rödmålade dekorationslådor i tre storlekar. Tydliga specifikationer, realistisk kostnadsbild
+            och rak produktionsplan — paketerat som en enkel presentation.
+          </p>
+          <div class="cta">
+            <a href="#slide-14" class="btn primary">Beställ offert</a>
+            <a href="#slide-6"  class="btn ghost">Visa specifikation</a>
+          </div>
+          <div style="display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:12px; margin-top:18px;">
+            <div class="card" style="text-align:center"><b style="font-size:24px;">3</b><br><small>Storlekar</small></div>
+            <div class="card" style="text-align:center"><b style="font-size:24px;">900+</b><br><small>Lådor</small></div>
+            <div class="card" style="text-align:center"><b style="font-size:24px;">~2&nbsp;v</b><br><small>Offertunderlag</small></div>
+          </div>
+        </div>
+        <div class="reveal in" style="display:grid; place-items:center;">
+          <div class="logo big" aria-hidden="true">
+            <img src="RadaLadan.png" alt="Röda lådan logotyp">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2–4: Each model -->
+    <section class="slide" id="slide-2" aria-label="Modell 320">
+      <div class="viewer" data-model="320/box-320.gltf"><span class="badge">320 × 150 × 120</span></div>
+    </section>
+
+    <section class="slide" id="slide-3" aria-label="Modell 280">
+      <div class="viewer" data-model="280/box-280.gltf"><span class="badge">280 × 150 × 120</span></div>
+    </section>
+
+    <section class="slide" id="slide-4" aria-label="Modell 240">
+      <div class="viewer" data-model="240/box-240.gltf"><span class="badge">240 × 150 × 120</span></div>
+    </section>
+
+
+    <!-- 6: Specifikationer -->
+    <section class="slide" id="slide-6" aria-label="Specifikationer">
+      <div class="container grid">
+        <div class="card span-12 reveal">
+          <h2>Specifikationer</h2>
+          <div class="grid specs" style="margin-top:8px">
+            <div class="row span-6"><span>Antal</span><b>900 st (3 × 300)</b></div>
+            <div class="row span-6"><span>Storlekar (L×B×H)</span><b>320×150×120 • 280×150×120 • 240×150×120 mm</b></div>
+            <div class="row span-6"><span>Form</span><b>Ytterkanter lutar svagt utåt</b></div>
+            <div class="row span-6"><span>Material</span><b>Plywood 12 mm (5-skikts)</b></div>
+            <div class="row span-6"><span>Ytbehandling</span><b>Röd färg + vit text “God Jul”</b></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7: Motivering -->
+    <section class="slide" id="slide-7" aria-label="Motivering">
+      <div class="container grid">
+        <div class="card span-12 reveal">
+          <h2>Varför denna konstruktion?</h2>
+          <p>Snabb serietillverkning, robusta fogar och jämn finish. Passar både laserskurna sidor och sågade brädor — välj efter maskinpark.</p>
+          <div class="grid specs" style="margin-top:10px">
+            <div class="row span-4"><span>Botten</span><b>Spårad/nedsänkt eller limmad insida</b></div>
+            <div class="row span-4"><span>Slip</span><b>Korn 180–240 före målning</b></div>
+            <div class="row span-4"><span>Text</span><b>Stencil/transfer i vitt</b></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 8: Kostnad — material -->
+    <section class="slide" id="slide-8" aria-label="Kostnad — material">
+      <div class="container grid">
+        <div class="card span-12 reveal allow-scroll" style="display:flex; flex-direction:column;">
+          <h2>Kostnadsöversikt (material)</h2>
+          <p>Priser enligt underlag.</p>
+          <div style="flex:1; overflow:auto;">
+            <table aria-label="Kostnadstabell">
+              <thead>
+                <tr><th>Post</th><th>Detalj</th><th>Summa</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Plywood</td><td>45 skivor × 399 kr</td><td><b id="plywoodSum">17&nbsp;955 kr</b></td></tr>
+                <tr><td>Färg</td><td>Falu Rödfärg Original 10 L, 32 × 799 kr</td><td><b id="paintSum">25&nbsp;568 kr</b></td></tr>
+                <tr><td>Trälim</td><td>Casco Cascol Winter 5 L</td><td><b id="glueSum">419 kr</b></td></tr>
+              </tbody>
+              <tfoot>
+                <tr><td colspan="2">Materialkostnad (brutto)</td><td><b id="matTotal">43&nbsp;942 kr</b></td></tr>
+                <tr><td colspan="2">Per låda (900 st)</td><td><b id="matPerBox">≈ 48,82 kr/st</b></td></tr>
+              </tfoot>
+            </table>
+          </div>
+          <small class="muted">Obs: exkl. arbetstid, ytterligare spill, maskintid och påslag.</small>
+        </div>
+      </div>
+    </section>
+
+    <!-- 9: Interaktiv kalkyl -->
+    <section class="slide" id="slide-9" aria-label="Kostnad — kalkyl">
+      <div class="container grid">
+        <div class="card span-12 reveal allow-scroll">
+          <h2>Interaktiv kalkyl</h2>
+          <div class="grid specs" style="margin-top:8px">
+            <div class="input span-3"><span class="muted">Minuter per låda</span><input id="inpMinPerBox" type="number" min="1" step="1" value="10"></div>
+            <div class="input span-3"><span class="muted">Antal arbetare</span><input id="inpWorkers" type="number" min="1" step="1" value="3"></div>
+            <div class="input span-3"><span class="muted">Grundlön (kr/h)</span><input id="inpBaseWage" type="number" min="1" step="1" value="74"></div>
+            <div class="input span-3"><span class="muted">Faktor (OH/påslag)</span><input id="inpFactor" type="number" min="1" step="0.1" value="2.8"></div>
+          </div>
+
+          <div class="grid specs" style="margin-top:12px">
+            <div class="row span-4"><span>Timkostnad inkl. faktor</span><b id="outEffHourly">207 kr/h</b></div>
+            <div class="row span-4"><span>Totala arbetstimmar</span><b id="outTotalHours">150 h</b></div>
+            <div class="row span-4"><span>Arbetskostnad totalt</span><b id="outLaborTotal">31&nbsp;050 kr</b></div>
+            <div class="row span-4"><span>Arbetskostnad / låda</span><b id="outLaborPerBox">34,50 kr</b></div>
+            <div class="row span-4"><span><b>Totalkostnad / låda</b></span><b id="outTotalPerBox">83,32 kr</b></div>
+            <div class="row span-4"><span>Kalenderdagar (8 h/dag)</span><b id="outDays">6,3 d</b></div>
+          </div>
+
+          <div style="margin-top:12px; padding:10px; border:1px dashed var(--line); border-radius:12px;">
+            <b>Rekommendation:</b> <span id="outReco">3 arbetare</span> ger bra flöde (kapning • montering/limning • målning/tryck) inom 2 veckor.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 10: Målad yta -->
+    <section class="slide" id="slide-10" aria-label="Målad yta">
+      <div class="container grid">
+        <div class="card span-12 reveal allow-scroll">
+          <h2>Målad yta</h2>
+          <div class="grid">
+            <div class="span-6">
+              <p><b>Detaljerad beräkning (utan topp):</b> ≈ <b>101,52 m²</b> totalt</p>
+              <div class="specs" style="margin-top:8px">
+                <div class="row"><span>320-lådan</span><b>0,129 m²/st → 38,70 m²</b></div>
+                <div class="row"><span>280-lådan</span><b>0,112 m²/st → 33,60 m²</b></div>
+                <div class="row"><span>240-lådan</span><b>0,0974 m²/st → 29,22 m²</b></div>
+              </div>
+            </div>
+            <div class="span-6">
+              <p><b>Alternativ grov uppskattning:</b> ≈ <b>252 m²</b> (0,312 + 0,280 + 0,248 m² × 300)</p>
+              <small class="muted">Denna variant ger högre yta (kan avse in-/utsidor + marginal). Välj metod utifrån val av finish.</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 11: Uppläggning & spill -->
+    <section class="slide" id="slide-11" aria-label="Uppläggning & spill">
+      <div class="container grid">
+        <div class="card span-12 reveal allow-scroll">
+          <h2>Uppläggning & spill (sammanfattning)</h2>
+          <div style="overflow:auto">
+            <table>
+              <thead>
+                <tr><th>Storlek</th><th>Plywood (st)</th><th>Spill</th><th>Kommentar</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>320</td><td>17</td><td>0,560 m²</td><td>Stora sidor 32 • Små sidor 40 • Bottnar 24</td></tr>
+                <tr><td>280</td><td>15</td><td>0,488 m²</td><td>Stora sidor 42 • Små sidor 42 • Bottnar 22</td></tr>
+                <tr><td>240</td><td>13</td><td>0,439 m²</td><td>Stora sidor 50 • Små sidor 50 • Bottnar 25</td></tr>
+              </tbody>
+              <tfoot>
+                <tr><td colspan="2">Total spill</td><td colspan="2"><b>≈ 22,547 m²</b> (uppskattat)</td></tr>
+              </tfoot>
+            </table>
+          </div>
+          <small class="muted">Totala plywoodskivor ≈ 45 (total yta 112,4 m²). Spillantagande kan justeras efter faktisk kapplan.</small>
+        </div>
+      </div>
+    </section>
+
+    <!-- 12: Plan — del 1 -->
+    <section class="slide" id="slide-12" aria-label="Plan — Del 1">
+      <div class="container grid">
+        <div class="card span-12 reveal">
+          <h2>Genomförande — del 1</h2>
+          <div class="grid" style="margin-top:6px">
+            <div class="card span-6">
+              <h3>1. Ritning & konstruktion</h3>
+              <p>Detaljera mått, lutning & fogar. Ta fram två konstruktionsvarianter (laser vs. såg).</p>
+            </div>
+            <div class="card span-6">
+              <h3>2. Material & inköp</h3>
+              <p>Bekräfta plywoodkvalitet, lim, färg. Planera ~45 skivor och färg enligt beräkning.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 13: Plan — del 2 -->
+    <section class="slide" id="slide-13" aria-label="Plan — Del 2">
+      <div class="container grid">
+        <div class="card span-12 reveal">
+          <h2>Genomförande — del 2</h2>
+          <div class="grid" style="margin-top:6px">
+            <div class="card span-6">
+              <h3>3. Tillverkning</h3>
+              <p>Skär/såga sidor, botten och gavlar. Montera enligt vald sammanfogning.</p>
+            </div>
+            <div class="card span-6">
+              <h3>4. Ytbehandling</h3>
+              <p>Grunda vid behov, måla rött, applicera vit text “God Jul”.</p>
+            </div>
+            <div class="card span-12">
+              <h3>5. Kontroll & leverans</h3>
+              <p>Provexemplar, kvalitetskontroll och packning satsvis (3 storlekar × 300).</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 14: Offert -->
+    <section class="slide" id="slide-14" aria-label="Offert">
+      <div class="container grid">
+        <div class="card span-6 reveal">
+          <h2>Beställ offert</h2>
+          <p>Vill du låsa kvantitet, leveransdatum eller lägga till lasergravyr? Skicka en förfrågan så återkommer vi med fast pris och tidsplan.</p>
+          <form onsubmit="event.preventDefault(); alert('Tack! Vi återkommer.');" style="display:grid; gap:10px; margin-top:12px">
+            <label>
+              <span style="display:block; font-size:12px; color:#98a1b3; margin-bottom:6px">Namn</span>
+              <input type="text" placeholder="Ditt namn" required
+                     style="width:100%; padding:12px 14px; border-radius:12px; border:1px solid #2a2e3a; background:#0e1116; color:var(--text)"/>
+            </label>
+            <label>
+              <span style="display:block; font-size:12px; color:#98a1b3; margin-bottom:6px">E-post</span>
+              <input type="email" placeholder="namn@example.com" required
+                     style="width:100%; padding:12px 14px; border-radius:12px; border:1px solid #2a2e3a; background:#0e1116; color:var(--text)"/>
+            </label>
+            <label>
+              <span style="display:block; font-size:12px; color:#98a1b3; margin-bottom:6px">Meddelande</span>
+              <textarea rows="4" placeholder="Hej, jag vill beställa 900 lådor enligt specifikationen…"
+                        style="width:100%; padding:12px 14px; border-radius:12px; border:1px solid #2a2e3a; background:#0e1116; color:var(--text)"></textarea>
+            </label>
+            <div style="display:flex; gap:10px; align-items:center; margin-top:2px">
+              <button class="btn primary" type="submit">Skicka förfrågan</button>
+              <button class="btn ghost" type="reset">Rensa</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="card span-6 reveal" style="display:grid; place-items:center">
+          <div class="logo" style="width:96px; height:96px;">
+            <img src="RadaLadan.png" alt="Röda lådan logotyp">
+          </div>
+          <p style="text-align:center; max-width:44ch; margin-top:14px; color:#aab2c2">
+            Har du redan ritningar eller vill du jämföra laser/såg? Bifoga info i meddelandet så optimerar vi offert och plan.
+          </p>
+          <footer style="margin-top:10px">© <span id="year"></span> Röda lådan • <a href="#slide-1" style="color:#cfd6e6; text-decoration:none">Till början</a></footer>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+<!-- Import map with canonical examples path -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "./libs/three/build/three.module.js",
+    "three/examples/jsm/": "./libs/three/examples/jsm/"
+  }
+}
+</script>
+
+
+<script type="module">
+  import * as THREE from 'three';
+  import { GLTFLoader }    from 'three/examples/jsm/loaders/GLTFLoader.js';
+  import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+
+  /* Elements */
+  const deck = document.getElementById('deck');
+  const slides = Array.from(document.querySelectorAll('section.slide'));
+  const dotsEl = document.getElementById('dots');
+  const nav = document.getElementById('topNav');
+
+  /* Build dots dynamically */
+  dotsEl.innerHTML = slides.map((s)=>`<a class="dot" href="#${s.id}"></a>`).join('');
+  const dots = Array.from(dotsEl.querySelectorAll('.dot'));
+
+  const setText = (id, value) => {
+  const n = document.getElementById(id);
+  if (n) n.textContent = value;
+};
+
+
+  /* Nav & dots scroll inside the horizontal deck */
+  function scrollToHash(hash){
+    const target = document.querySelector(hash);
+    if (target) target.scrollIntoView({ behavior:'smooth', block:'nearest', inline:'start' });
+  }
+  nav.addEventListener('click', (e)=>{
+    const a = e.target.closest('a[href^="#"]'); if(!a) return;
+    e.preventDefault(); scrollToHash(a.getAttribute('href'));
+  });
+  dotsEl.addEventListener('click', (e)=>{
+    const a = e.target.closest('a[href^="#"]'); if(!a) return;
+    e.preventDefault(); scrollToHash(a.getAttribute('href'));
+  });
+
+  /* Map vertical wheel to horizontal scroll (unless inside .allow-scroll) */
+  const wheelToHorizontal = (e)=>{
+    if (e.target.closest('.allow-scroll')) return;
+    const absX = Math.abs(e.deltaX), absY = Math.abs(e.deltaY);
+    if (absX > absY) return;
+    e.preventDefault();
+    deck.scrollBy({ left: e.deltaY * 1.0, behavior:'smooth' });
+  };
+  deck.addEventListener('wheel', wheelToHorizontal, { passive:false });
+
+  /* Intersection observer for horizontal deck */
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){
+        const idx = slides.indexOf(e.target);
+        dots.forEach(d=>d.classList.remove('active'));
+        if (dots[idx]) dots[idx].classList.add('active');
+        e.target.querySelectorAll('.reveal').forEach(el=>el.classList.add('in'));
+        history.replaceState(null, '', '#'+e.target.id);
+      }
+    });
+  }, { root: deck, threshold: .55 });
+  slides.forEach(s=>io.observe(s));
+
+  /* Prev/Next & keyboard */
+  function gotoSlide(dir){
+    const w = deck.clientWidth;
+    const x = deck.scrollLeft;
+    const next = dir>0 ? Math.ceil((x+1)/w) : Math.floor((x-1)/w);
+    const i = Math.max(0, Math.min(slides.length-1, next));
+    slides[i].scrollIntoView({behavior:'smooth', inline:'start', block:'nearest'});
+  }
+  document.getElementById('prevSlide').addEventListener('click', ()=>gotoSlide(-1));
+  document.getElementById('nextSlide').addEventListener('click', ()=>gotoSlide(1));
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === 'PageDown') gotoSlide(1);
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') gotoSlide(-1);
+  });
+
+  /* Year */
+  document.getElementById('year').textContent = new Date().getFullYear();
+
+  /* MiniViewer — robust GLTF loading */
+/* MiniViewer — adopt GLTF camera + double-sided materials */
+class MiniViewer {
+  constructor(container){
+    this.container = container;
+
+    // Scene
+    this.scene = new THREE.Scene();
+    this.scene.background = new THREE.Color(0x222228);
+
+    // Start with a default camera (will be replaced if GLTF has one)
+    this.camera = new THREE.PerspectiveCamera(35, 16/9, 0.01, 2000);
+    this.camera.position.set(1.5, 1.2, 1.8);
+
+    // Renderer
+    this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
+    if ('outputColorSpace' in this.renderer) this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+    else this.renderer.outputEncoding = THREE.sRGBEncoding;
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.8));
+    this._resize();
+    container.appendChild(this.renderer.domElement);
+
+    // Lights
+    const hemi = new THREE.HemisphereLight(0xffffff, 0x404040, 1.0);
+    const key  = new THREE.DirectionalLight(0xffffff, 1.2); key.position.set(3, 3, 2);
+    const fill = new THREE.DirectionalLight(0xffffff, 0.7); fill.position.set(-3, 2, -2);
+    const amb  = new THREE.AmbientLight(0xffffff, 0.35);
+    this.scene.add(hemi, key, fill, amb);
+
+    // Controls
+    this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+    this.controls.enableDamping = true;
+    this.controls.dampingFactor = 0.06;
+    this.controls.autoRotate = true;
+    this.controls.autoRotateSpeed = 0.8;
+    this.controls.minDistance = 0.02;
+    this.controls.maxDistance = 500;
+    this.controls.enablePan = false;
+
+    // Loader
+    const loader = new GLTFLoader();
+
+    // Split data-model into base path + filename
+    const gltfURL = container.getAttribute('data-model') || '';
+    const lastSlash = gltfURL.lastIndexOf('/');
+    const basePath  = lastSlash >= 0 ? gltfURL.slice(0, lastSlash + 1) : '';
+    const fileName  = lastSlash >= 0 ? gltfURL.slice(lastSlash + 1)   : gltfURL;
+    if (basePath) loader.setPath(basePath);
+
+    loader.manager.onError = (url)=> console.error('[Missing asset]', url);
+
+    loader.load(
+      fileName,
+      (gltf) => {
+        const root = gltf.scene || gltf.scenes?.[0];
+        if (!root) { this._msg('Modell saknas i GLTF.'); return; }
+
+        // Materials: double-sided to avoid lost faces on thin boards / inverted normals
+        root.traverse(o=>{
+          if (o.isMesh) {
+            o.castShadow = o.receiveShadow = true;
+            if (o.material){
+              (Array.isArray(o.material) ? o.material : [o.material]).forEach(m=>{
+                if (m.transparent && m.opacity === 0) m.opacity = 1;
+                m.side = THREE.DoubleSide; // comment out if you want strict back-face culling
+              });
+            }
+            o.frustumCulled = false;
+          }
+        });
+
+        this.scene.add(root);
+
+        // Try to adopt camera from GLTF (matches SolidWorks view)
+        const adopted = this._adoptGltfCamera(root);
+        const bbox = new THREE.Box3().setFromObject(root);
+        const size = new THREE.Vector3(); bbox.getSize(size);
+        const center = new THREE.Vector3(); bbox.getCenter(center);
+
+        if (!adopted) this._frame(root); // fallback framing with perspective cam
+
+        // Controls target to model center (works for either camera)
+        this.controls.target.copy(center);
+        this.controls.update();
+
+          
+
+        // Keep aspect in sync after we know the camera
+        this._resize();
+
+        // (optional) play first animation
+        if (gltf.animations?.length){
+          this.mixer = new THREE.AnimationMixer(root);
+          this.mixer.clipAction(gltf.animations[0]).play();
+        }
+      },
+      undefined,
+      (err) => {
+        console.error('GLTF load error:', err);
+        this._msg('Kunde inte ladda: ' + (fileName || gltfURL));
+      }
+    );
+
+    // Resize observer
+    const ro = new ResizeObserver(()=>this._resize());
+    ro.observe(container);
+    this.ro = ro;
+
+    // Loop
+    this._animate = this._animate.bind(this);
+    this.running = true;
+    requestAnimationFrame(this._animate);
+
+    document.addEventListener('visibilitychange', () => {
+      this.running = !document.hidden;
+      if (this.running) requestAnimationFrame(this._animate);
+    }, { passive: true });
+
+    // Toggle autorotate on double-click
+    container.addEventListener('dblclick', ()=>{ this.controls.autoRotate = !this.controls.autoRotate; }, { passive: true });
+  }
+
+  // If GLTF has a camera, adopt it (including orthographic)
+  _adoptGltfCamera(root){
+    let cam = null;
+    root.traverse(o=>{ if (!cam && o.isCamera) cam = o; });
+    if (!cam) return false;
+
+    // Replace viewer camera/controls target
+    this.camera = cam;
+    this.controls.object = this.camera;
+
+    // Ensure aspect or frustum matches canvas
+    const w = this.container.clientWidth || 1;
+    const h = this.container.clientHeight || 1;
+    const aspect = w / h;
+
+    if (cam.isPerspectiveCamera){
+      cam.aspect = aspect;
+      cam.updateProjectionMatrix();
+    } else if (cam.isOrthographicCamera){
+      // GLTF sets left/right (±xmag) and top/bottom (±ymag). Keep ymag; recompute x by aspect.
+      const ymag = Math.max(Math.abs(cam.top), Math.abs(cam.bottom)) || 1;
+      cam.top    =  ymag;
+      cam.bottom = -ymag;
+      cam.left   = -ymag * aspect;
+      cam.right  =  ymag * aspect;
+      // Keep original near/far from GLTF
+      cam.updateProjectionMatrix();
+    }
+    return true;
+  }
+
+  _frame(object3D){
+    const box = new THREE.Box3().setFromObject(object3D);
+    const size = new THREE.Vector3(), center = new THREE.Vector3();
+    box.getSize(size); box.getCenter(center);
+
+    // Put on "ground"
+    object3D.position.y -= box.min.y;
+
+    const maxDim = Math.max(size.x, size.y, size.z) || 1;
+    const fitH = maxDim / (2 * Math.tan(THREE.MathUtils.degToRad(this.camera.fov || 35) / 2));
+    const fitW = fitH / (this.camera.aspect || 1);
+    const distance = 1.6 * Math.max(fitH, fitW);
+
+    const dir = new THREE.Vector3(1, 0.8, 1).normalize();
+    this.camera.position.copy(center).addScaledVector(dir, distance);
+    this.camera.near = Math.max(distance / 500, 0.001);
+    this.camera.far  = distance * 500;
+    this.camera.updateProjectionMatrix();
+    this.controls.target.copy(center);
+    this.controls.update();
+  }
+
+  _resize(){
+    const w = this.container.clientWidth || 1;
+    const h = this.container.clientHeight || 1;
+    if (this.camera.isPerspectiveCamera){
+      this.camera.aspect = w / h;
+    } else if (this.camera.isOrthographicCamera){
+      const aspect = w / h;
+      const ymag = Math.max(Math.abs(this.camera.top), Math.abs(this.camera.bottom)) || 1;
+      this.camera.top    =  ymag;
+      this.camera.bottom = -ymag;
+      this.camera.left   = -ymag * aspect;
+      this.camera.right  =  ymag * aspect;
+    }
+    this.camera.updateProjectionMatrix();
+    if (this.renderer.domElement.parentElement) this.renderer.setSize(w, h, false);
+  }
+
+  _animate(now){
+    if (!this.running) return;
+    const prev = this.prev ?? now;
+    const delta = (now - prev) / 1000;
+    this.prev = now;
+    if (this.mixer) this.mixer.update(delta);
+    this.controls.update();
+    this.renderer.render(this.scene, this.camera);
+    requestAnimationFrame(this._animate);
+  }
+
+  _msg(text){
+    const d = document.createElement('div');
+    d.textContent = text;
+    Object.assign(d.style, {
+      position:'absolute', left:'10px', right:'10px', bottom:'10px',
+      background:'rgba(0,0,0,.5)', padding:'8px 10px',
+      border:'1px solid #20242f', borderRadius:'10px',
+      color:'#fff', fontSize:'12px'
+    });
+    const old = this.container.querySelector('.mv-note');
+    if (old) old.remove();
+    d.className = 'mv-note';
+    this.container.appendChild(d);
+  }
+
+  dispose(){
+    this.running = false;
+    this.ro?.disconnect();
+    this.controls?.dispose();
+    this.scene.traverse(o=>{
+      if (o.isMesh){
+        o.geometry?.dispose?.();
+        (Array.isArray(o.material) ? o.material : [o.material]).forEach(m=>m.dispose?.());
+      }
+    });
+    this.renderer?.dispose();
+    this.container.innerHTML = '';
+  }
+}
+
+
+
+
+  // Initialize viewers
+  const viewers = new Map();
+  function initViewerIfNeeded(el){ if (!viewers.has(el)) viewers.set(el, new MiniViewer(el)); }
+  const viewerEls = Array.from(document.querySelectorAll('.viewer'));
+  viewerEls.forEach(v=>initViewerIfNeeded(v));
+
+  const vio = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{ if(e.isIntersecting) initViewerIfNeeded(e.target); });
+  }, { root: deck, threshold: .25 });
+  viewerEls.forEach(v=>vio.observe(v));
+
+  window.addEventListener('beforeunload', ()=> viewers.forEach(v=>v.dispose()));
+
+  /* Kalkyl */
+  const fmt = (n)=> n.toLocaleString('sv-SE');
+  const el = (id)=> document.getElementById(id);
+  const MATERIAL = { plywoodSheets:45, plywoodPrice:399, paintBuckets:32, paintPrice:799, gluePrice:419, boxes:900 };
+
+  function recalc(){
+  const matPly = MATERIAL.plywoodSheets * MATERIAL.plywoodPrice;
+  const matPaint = MATERIAL.paintBuckets * MATERIAL.paintPrice;
+  const matGlue = MATERIAL.gluePrice;
+  const matTotal = matPly + matPaint + matGlue;
+  const matPerBox = matTotal / MATERIAL.boxes;
+
+  setText('plywoodSum', fmt(matPly) + ' kr');
+  setText('paintSum',   fmt(matPaint) + ' kr');
+  setText('glueSum',    fmt(matGlue) + ' kr');
+  setText('matTotal',   fmt(matTotal) + ' kr');
+  setText('matPerBox',  '≈ ' + fmt(Number(matPerBox.toFixed(2))) + ' kr/st');
+
+  const minPerBox = Math.max(1, Number(el('inpMinPerBox')?.value||10));
+  const workers   = Math.max(1, Math.floor(Number(el('inpWorkers')?.value||3)));
+  const baseWage  = Math.max(1, Number(el('inpBaseWage')?.value||74));
+  const factor    = Math.max(1, Number(el('inpFactor')?.value||2.8));
+
+  const effHourly  = baseWage * factor;
+  const totalHours = (minPerBox * MATERIAL.boxes) / 60;
+  const laborTotal = totalHours * effHourly;
+  const laborPerBox = laborTotal / MATERIAL.boxes;
+  const totalPerBox = matPerBox + laborPerBox;
+  const days = totalHours / (8 * workers);
+
+  setText('outEffHourly',   fmt(Math.round(effHourly)) + ' kr/h');
+  setText('outTotalHours',  fmt(Math.round(totalHours)) + ' h');
+  setText('outLaborTotal',  fmt(Math.round(laborTotal)) + ' kr');
+  setText('outLaborPerBox', fmt(Number(laborPerBox.toFixed(2))) + ' kr');
+  setText('outTotalPerBox', fmt(Number(totalPerBox.toFixed(2))) + ' kr');
+  setText('outDays',        (Math.round(days*10)/10) + ' d');
+
+  const targetDays = 10;
+  const needed = Math.ceil(totalHours / (8 * targetDays));
+  setText('outReco', `${needed} arbetare`);
+}
+
+
+  ['inpMinPerBox','inpWorkers','inpBaseWage','inpFactor'].forEach(id=>{
+    const input = document.getElementById(id); if (!input) return;
+    input.addEventListener('input', recalc);
+  });
+  recalc();
+
+  /* Deep link */
+  if (location.hash) {
+    const t = document.querySelector(location.hash);
+    if (t) t.scrollIntoView({behavior:'instant', inline:'start', block:'nearest'});
+  }
+</script>
+
+</body>
+</html>
